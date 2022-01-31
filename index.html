@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	<link rel="stylesheet" href="css/normlize.css">
+	<link rel="stylesheet" href="css/style.css">
+	<title>My Video Chat</title>
+</head>
+
+<body>
+	<main>
+		<div class="main_left">
+			<h2 class="fc">翻訳結果</h2>
+			<button id="btn">翻訳開始</button>
+			<div id="content"></div>
+		</div>
+		<div class="main_right">
+			<h1 class="fc">AI翻訳会議ツール</h1>
+			<p class="fc">
+				<input  class="fc" type="checkbox" id="checkbox_camera" onclick="onclickCheckbox_CameraMicrophone()">Camera
+				<input  class="fc" type="checkbox" id="checkbox_microphone" onclick="onclickCheckbox_CameraMicrophone()">Microphone
+			</p>
+			<br />
+			<video id="video_local" width="450" height="400" style="border: 2px solid #90ee90;" autoplay></video>
+			<video id="video_remote" width="450" height="400" style="border: 2px solid #90ee90;" autoplay></video><audio
+				id="audio_remote" autoplay></audio>
+			<br />
+			<button onclick="onclickButton_SendOfferSDP()">通話開始</button>
+			<button onclick="mediaclick()">画面共有の開始</button>
+			<video id="video_free" autoplay playsinline></video>
+		</div>
+	</main>
+
+	<!-- Script -->
+	<script>
+		//関数の呼び出し
+		const speech = new webkitSpeechRecognition();
+		//言語の指定
+		//ネイティブに喋らないと難しいかもしれない
+		speech.lang = 'ja-JA';
+
+		//ボタンの取得
+		const btn = document.getElementById('btn');
+		//コンテンツの取得
+		const content = document.getElementById('content');
+		//click時に関数の実行
+		btn.addEventListener('click', function () {
+			console.log("succes");
+			speech.start();
+		});
+
+		speech.onresult = function (e) {
+			speech.stop();
+			if (e.results[0].isFinal) {
+				var autotext = e.results[0][0].transcript
+				console.log("input: " + autotext);
+				getText(
+					autotext,
+					'EN',
+					function (result) {
+						let translations = result["translations"];
+						let message = translations[0]["text"];
+						let lang = translations[0]["detected_source_language"];
+
+						console.log("out: message=" + message);
+						console.log("out: lang=" + lang);
+						content.innerHTML += '<div class="text_margin">' + autotext + '</div>';
+						content.innerHTML += '<div>' + message + '</div>';
+					}, function (error) {
+						console.log(error);
+					});
+			}
+		}
+		speech.onend = () => {
+			speech.start()
+		};
+		function getText(text, lang, successFunc, errorFunc) {
+			let data = {
+				auth_key: 'c400e9e9-4ac7-2667-33dc-f429ee1fa891:fx',
+				text: text,
+				target_lang: lang
+			};
+
+			let xmlhttp = new XMLHttpRequest();
+
+			// WebApiのURLと通信方法(GET or POST)を指定する
+			xmlhttp.open("POST", "https://api-free.deepl.com/v2/translate", true);
+			// サーバに対して解析方法を指定する
+			xmlhttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+			xmlhttp.responseType = 'text';
+
+			//phpの読み込み時の処理
+			xmlhttp.onload = function () {
+				if (xmlhttp.readyState === xmlhttp.DONE) {
+					if (xmlhttp.status === 200) { //成功ステータスコード
+						// 通信成功時の処理
+						let obj = JSON.parse(xmlhttp.responseText);
+						successFunc(obj);
+					} else {
+						// 通信失敗時の処理
+						let obj = JSON.parse(xmlhttp.responseText);
+						errorFunc(obj);
+					}
+				}
+			}
+			xmlhttp.send(EncodeHTMLForm(data));
+		}
+
+		function EncodeHTMLForm(data) {
+			var params = [];
+
+			for (var name in data) {
+				var value = data[name];
+				var param = encodeURIComponent(name) + '=' + encodeURIComponent(value);
+
+				params.push(param);
+			}
+			return params.join('&').replace(/%20/g, '+');
+		}
+		
+        function mediaclick(){
+            const mediaStreamConstraints = {
+            video: true
+        };
+
+        const localVideo = document.getElementById("video_free");
+
+        function gotLocalMediaStream(mediaStream) {
+            const localStream = mediaStream;
+            localVideo.srcObject = mediaStream;
+        }
+
+        function handleLocalMediaStreamError(error) {
+            console.log("navigator.getUserMedia error: ", error);
+        }
+
+        navigator.mediaDevices
+            .getDisplayMedia(mediaStreamConstraints)
+            .then(gotLocalMediaStream)
+            .catch(handleLocalMediaStreamError);
+        }
+	</script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="./client.js"></script>
+	
+</body>
+
+</html>
