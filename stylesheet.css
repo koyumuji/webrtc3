@@ -1,0 +1,31 @@
+@charset "UTF-8";
+html {
+  font-family: "Source Sans Pro", sans-serif;
+}
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: #000;
+  text-align-last: center;
+}
+main{
+  display: flex;
+}
+main .main_left{
+  width: 30%;
+  margin-right: 30px;
+}
+main .main_left .text_margin{
+  margin: 10px 0;
+}
+.fc {
+  color: #fff;
+}
+#content{
+  color: #fff;
+  height: 90vh;
+  overflow-y: scroll;
+}
